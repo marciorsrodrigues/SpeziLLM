@@ -36,8 +36,12 @@ public struct LLMOpenAIPlatformConfiguration: Sendable {
     public let retryPolicy: RetryPolicy
     /// The task priority of the initiated LLM inference tasks.
     public let taskPriority: TaskPriority
+    /// Additional HTTP headers to attach to every request to the inference endpoint.
+    /// Useful for OpenAI-compatible gateways like OpenRouter that read app-identification
+    /// headers (`HTTP-Referer`, `X-Title`) for analytics and rate-limit tiering.
+    public let additionalHeaders: [String: String]
 
-    
+
     /// Creates the ``LLMOpenAIPlatformConfiguration`` which configures the Spezi ``LLMOpenAIPlatform``.
     ///
     /// - Parameters:
@@ -47,13 +51,15 @@ public struct LLMOpenAIPlatformConfiguration: Sendable {
     ///   - timeout: Indicates the maximum network timeout of OpenAI requests in seconds. defaults to `60`.
     ///   - retryPolicy: The retry policy that should be used, defaults to `3` retry attempts.
     ///   - taskPriority: The task priority of the initiated LLM inference tasks, defaults to `.userInitiated`.
+    ///   - additionalHeaders: Extra HTTP headers attached to every request. Empty by default.
     public init(
         serverUrl: URL = Defaults.defaultServerUrl,     // swiftlint:disable:this function_default_parameter_at_end
         authToken: RemoteLLMInferenceAuthToken,
         concurrentStreams: Int = 10,
         timeout: TimeInterval = 60,
         retryPolicy: RetryPolicy = .attempts(3),
-        taskPriority: TaskPriority = .userInitiated
+        taskPriority: TaskPriority = .userInitiated,
+        additionalHeaders: [String: String] = [:]
     ) {
         self.serverUrl = serverUrl
         self.authToken = authToken
@@ -61,5 +67,6 @@ public struct LLMOpenAIPlatformConfiguration: Sendable {
         self.timeout = timeout
         self.retryPolicy = retryPolicy
         self.taskPriority = taskPriority
+        self.additionalHeaders = additionalHeaders
     }
 }

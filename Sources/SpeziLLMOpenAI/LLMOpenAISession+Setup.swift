@@ -66,6 +66,19 @@ extension LLMOpenAISession {
             keychainStorage: self.keychainStorage
         )
 
+        // Build the middleware chain. Adds an additional-headers middleware first
+        // (so per-app identification like OpenRouter's HTTP-Referer / X-Title is
+        // present on every request) when configured, plus the standard bearer-auth
+        // and retry middlewares.
+        var middlewares: [any ClientMiddleware] = []
+        if !self.platform.configuration.additionalHeaders.isEmpty {
+            middlewares.append(
+                AdditionalHeadersMiddleware(headers: self.platform.configuration.additionalHeaders)
+            )
+        }
+        middlewares.append(bearerAuthMiddleware)
+        middlewares.append(RetryMiddleware(policy: self.platform.configuration.retryPolicy))
+
         // Initialize the OpenAI model
         self.openAiClient = Client(
             serverURL: self.platform.configuration.serverUrl,
@@ -74,12 +87,7 @@ extension LLMOpenAISession {
                 session.configuration.timeoutIntervalForRequest = platform.configuration.timeout
                 return URLSessionTransport(configuration: .init(session: session))
             }(),
-            middlewares: [
-                // Injects the bearer auth token for account verification into request headers
-                bearerAuthMiddleware,
-                // Retry policy for failed requests
-                RetryMiddleware(policy: self.platform.configuration.retryPolicy)
-            ]
+            middlewares: middlewares
         )
 
         return true
