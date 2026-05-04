@@ -75,8 +75,13 @@ extension LLMOpenAISession {
                     }
 
                     guard let choices = chatStreamResult.data?.choices else {
-                        Self.logger.error("SpeziLLMOpenAI: Couldn't obtain choices from stream response.")
-                        return
+                        // Skip SSE events with no `choices` payload (keep-alives / comments).
+                        // OpenRouter, for example, sends `: OPENROUTER PROCESSING` SSE comment
+                        // lines while the upstream provider is starting; the OpenAPI runtime
+                        // surfaces these as events whose `data` is nil. Original code returned
+                        // here, aborting the entire stream on the first keep-alive.
+                        Self.logger.debug("SpeziLLMOpenAI: skipping SSE event with no choices (likely a keep-alive).")
+                        continue
                     }
 
                     // Important to iterate over all choices as LLM could choose to call multiple functions / generate multiple choices
